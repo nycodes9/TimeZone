@@ -176,4 +176,89 @@ public class MainActivity extends ActionBarActivity implements SharedPreferences
 		}
 	};
 	
+	
+	// full screen code programatically
+	@Override
+	public void onWindowFocusChanged(boolean hasFocus) {
+		super.onWindowFocusChanged(hasFocus);
+		if (hasFocus) {
+			if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+				getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+						WindowManager.LayoutParams.FLAG_FULLSCREEN);
+			} else {
+				getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN
+						| View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+						| View.SYSTEM_UI_FLAG_FULLSCREEN);
+			}
+		}
+	}
+	
+	public void videotest() {
+		if (mShowVideo 
+				&& android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1) {	
+			
+			setContentView(R.layout.layout_fullscreen_video);
+
+			mOnboardingVV = (VideoView) findViewById(R.id.fullscreenVideoVV);
+			Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.onboarding6);
+			mOnboardingVV.setVideoURI(video);
+			mOnboardingVV.setOnCompletionListener(new OnCompletionListener() {
+				public void onCompletion(MediaPlayer mp) {
+					
+					mIsVideoComplete = true;
+					preInit();
+				}
+			});
+			mOnboardingVV.start();
+			
+			/**
+			 * Skip imageview click stops video playback and in turn calls OnCompletionListener.onCompletion()
+			 */
+			mskipVideoIV = (ImageView) findViewById(R.id.fullscreenVideoSkipIV);
+			mskipVideoIV.setVisibility(View.INVISIBLE);
+			mskipVideoIV.setOnClickListener(new OnClickListener() {
+				
+				@Override
+				public void onClick(View v) {
+					
+					// stop playback and go on with initFinished
+					mOnboardingVV.stopPlayback();
+					mIsVideoComplete = true;
+					preInit();
+					
+				}
+			});
+			
+//			showVideoSkipControl(true);
+			mShowSkipTimer.start();
+	}
+	
+	private CountDownTimer mShowSkipTimer = new CountDownTimer(mVideoPlaybackThreshold, 1000) {
+		
+		private boolean canShowSkip = false;
+		
+		@Override
+		public void onTick(long millisUntilFinished) {
+			/**
+			 * if task is complete and show skip is true then end timer and show skip UI
+			 */
+			if (canShowSkip && mIsInitTaskComplete) {
+				mShowSkipTimer.cancel();
+				mskipVideoIV.setVisibility(View.VISIBLE);
+			}
+		}
+		
+		@Override
+		public void onFinish() {
+			// can show skip is true iff mVideoPlaybackThreshold has elapsed
+			canShowSkip = true;
+			// if init task not complete then start the timer again
+			if (!mIsInitTaskComplete) {
+				mShowSkipTimer.start();
+			} else {
+				mskipVideoIV.setVisibility(View.VISIBLE);
+			}
+		}
+	};
+	
 }
